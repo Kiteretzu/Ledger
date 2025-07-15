@@ -159,15 +159,26 @@ export const loginSimple = async (req: Request, res: Response) => {
 export const fetchAttendanceDetails = async (req: Request, res: Response) => {
   try {
     const token = req.query.token;
-    console.log("this is token", token);
+    const semester = req.query.semester as string;
+
+    const allPayloads = await redis.hgetall("attendance");
+
+    const payload = allPayloads[semester];
+
+    console.log("this is payload", payload);
+
+    if (!payload) {
+      return res.status(404).json({
+        error: "Invalid semester index or payload not found",
+      });
+    }
+
+    const localname = await redis.get("localname");
 
     const url =
       "https://webportal.juit.ac.in:6011/StudentPortalAPI/StudentClassAttendance/getstudentattendancedetail";
 
     const oldAuthorization = "Bearer " + token;
-
-    const localname = await redis.get("localname");
-    const payload = await redis.get("payload");
 
     console.log({ localname, payload });
     const headers = {
@@ -215,142 +226,6 @@ export const fetchAttendanceDetails = async (req: Request, res: Response) => {
   }
 };
 
-export const extractPayloadAndLocalname = async (
-  req: Request,
-  res: Response
-) => {
-  const token = req.query.token as string;
-  let browser: puppeteer.Browser | null = null;
-  const result: { localname?: string; payload?: string } = {};
+// fetch exam DAta
 
-  try {
-    browser = await puppeteer.launch({
-      headless: false,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
 
-    const page = await browser.newPage();
-
-    const targetUrlKeyword = "getstudentattendancedetail";
-
-    await page.setRequestInterception(true);
-    page.on("request", (request) => {
-      if (request.url().includes(targetUrlKeyword)) {
-        const headers = request.headers();
-        if (headers["localname"]) {
-          result.localname = headers["localname"];
-        }
-        const postData = request.postData();
-        if (postData) {
-          result.payload = postData;
-        }
-      }
-      request.continue();
-    });
-
-    await page.goto("https://webportal.juit.ac.in:6011/studentportal/#/", {
-      waitUntil: "networkidle2",
-    });
-
-    await page.evaluate((token) => {
-      localStorage.setItem("Token", token);
-      localStorage.setItem("Username", "231030118");
-      localStorage.setItem("activeform", "My Attendance");
-      localStorage.setItem("bypassValue", "fG3a4YsgeK/IJEK4+vjHjg==");
-      localStorage.setItem("clientid", "JAYPEE");
-      localStorage.setItem("enrollmentno", "231030118");
-      localStorage.setItem("instituteid", "INID2201J000001");
-      localStorage.setItem(
-        "institutename",
-        "JAYPEE UNIVERSITY OF INFORMATION TECHNOLOGY"
-      );
-      localStorage.setItem("membertype", "S");
-      localStorage.setItem("name", "SMARTH VERMA");
-      localStorage.setItem("otppwd", "PWD");
-      localStorage.setItem("rejectedData", "NoData");
-      localStorage.setItem(
-        "tokendate",
-        "Thu Jul 09 2025 16:33:31 GMT+0530 (India Standard Time)"
-      );
-      localStorage.setItem("userid", "USID2311A0000264");
-      localStorage.setItem("usertypeselected", "S");
-
-      sessionStorage.setItem("clientidforlink", "JUIT");
-      sessionStorage.setItem(
-        "phantom.contentScript.providerInjectionOptions.v3",
-        '{"hideProvidersArray":false,"dontOverrideWindowEthereum":false}'
-      );
-      sessionStorage.setItem(
-        "tokendate",
-        "Wed Jul 09 2025 16:33:31 GMT+0530 (India Standard Time)"
-      );
-    }, token);
-
-    await page.goto(
-      "https://webportal.juit.ac.in:6011/studentportal/#/student/myclassattendance",
-      { waitUntil: "networkidle2" }
-    );
-    const timeBefore = Date.now();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    await page.waitForSelector("#mat-select-0 .mat-mdc-select-trigger", {
-      visible: true,
-    });
-    await page.evaluate(() => {
-      const trigger = document.querySelector(
-        "#mat-select-0 .mat-mdc-select-trigger"
-      ) as HTMLElement;
-      if (trigger) trigger.click();
-    });
-
-    await page.waitForSelector(".mat-mdc-option span", { visible: true });
-
-    const allSemesterCodes = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll(".mat-mdc-option span")).map(
-        (el) => el.textContent?.trim()
-      );
-    });
-    console.log("Available Semester Codes:", allSemesterCodes);
-
-    const semesterCode = "2025ODDSEM";
-    await page.evaluate((semesterCode) => {
-      const options = Array.from(
-        document.querySelectorAll(".mat-mdc-option span")
-      );
-      const target = options.find(
-        (el) => el.textContent?.trim() === semesterCode
-      );
-      if (target) (target as HTMLElement).click();
-    }, semesterCode);
-
-    await page.click('button[aria-label="Submit"]');
-
-    for (let i = 0; i < 30; i++) {
-      if (result.localname && result.payload) break;
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-
-    await Promise.all([
-      redis.set("localname", result.localname || ""),
-      redis.set("payload", result.payload || ""),
-    ]);
-
-    const timeAfter = Date.now();
-    const duration = timeAfter - timeBefore;
-
-    res.status(200).json({
-      message: "Extraction complete and data stored in Redis",
-      data: result,
-      duration,
-      semesterCode,
-      allSemesterCodes,
-    });
-  } catch (error: any) {
-    console.error("Extraction failed:", error);
-    res.status(500).json({
-      error: "Extraction failed",
-      details: error.message,
-    });
-  } finally {
-    if (browser) await browser.close();
-  }
-};
