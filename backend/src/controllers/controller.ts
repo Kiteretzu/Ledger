@@ -4,6 +4,7 @@ import puppeteer from "puppeteer";
 import fs from "fs";
 import path from "path";
 import { extractTextFromImage } from "../helper/getCaptcha";
+import redis from "../redis";
 
 export const loginSimple = async (req: Request, res: Response) => {
   const { username, password } = req.body;
@@ -11,15 +12,12 @@ export const loginSimple = async (req: Request, res: Response) => {
 
   try {
     browser = await puppeteer.launch({
-      headless: true, // Set to true for production
+      headless: false, // Set to true for production
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
       // Removed slowMo for faster execution
     });
 
     const page = await browser.newPage();
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    );
 
     // Set up parallel tasks for faster execution
     const [_, captchaPromise] = await Promise.all([
@@ -124,7 +122,7 @@ export const loginSimple = async (req: Request, res: Response) => {
       page.evaluate(() => document.body.innerText),
       page.evaluate(() => localStorage.getItem("Token")),
     ]);
-  
+
     const isLoginSuccessful =
       !bodyText.includes("Enter Password") &&
       !bodyText.includes("Invalid") &&
@@ -168,6 +166,10 @@ export const fetchAttendanceDetails = async (req: Request, res: Response) => {
 
     const oldAuthorization = "Bearer " + token;
 
+    const localname = await redis.get("localname");
+    const payload = await redis.get("payload");
+
+    console.log({ localname, payload });
     const headers = {
       Accept: "application/json, text/plain, */*",
       "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -176,7 +178,7 @@ export const fetchAttendanceDetails = async (req: Request, res: Response) => {
       Connection: "keep-alive",
       "Content-Type": "application/json",
       Host: "webportal.juit.ac.in:6011",
-      LocalName: "MHMIzQaIeBrB+xmuN1SUTA2xHLmkxVTkLwzlJmvnMBk=", // Updated to match curl
+      LocalName: localname,
       Origin: "https://webportal.juit.ac.in:6011",
       Referer: "https://webportal.juit.ac.in:6011/studentportal/",
       "Sec-Fetch-Dest": "empty",
@@ -185,15 +187,23 @@ export const fetchAttendanceDetails = async (req: Request, res: Response) => {
       "Sec-GPC": "1",
       "User-Agent":
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-      "sec-ch-ua": '"Brave";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
+      "sec-ch-ua":
+        '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
       "sec-ch-ua-mobile": "?0",
       "sec-ch-ua-platform": '"macOS"',
     };
 
     // Fixed: Remove the extra quotes around the data to match curl's --data-raw
-    const data = `E+gXA49xuaSGCc49U2XEmr5rGRNLmMVwNae6fZEmf/RJMTMMUeaJNCnL6xhHc7OtXky33v5GaQ3y9TGbEnZ9YdmuW6JJnFuR5PTKAT5cycOdRSqhdk1ds58a02AtCZB1iS8YpJsqStoWfZKkzMws8x3cPHeCi3G2fc4m37hDlqk=`;
+    const data = payload;
 
     const response = await axios.post(url, data, { headers });
+
+    if (!response.data) {
+      console.log("response", response);
+      return res.status(404).json({
+        error: "No attendance details found",
+      });
+    }
 
     res.status(200).json(response.data);
   } catch (error: any) {
@@ -202,5 +212,145 @@ export const fetchAttendanceDetails = async (req: Request, res: Response) => {
       error: "Failed to fetch attendance details",
       details: error.message || error.toString(),
     });
+  }
+};
+
+export const extractPayloadAndLocalname = async (
+  req: Request,
+  res: Response
+) => {
+  const token = req.query.token as string;
+  let browser: puppeteer.Browser | null = null;
+  const result: { localname?: string; payload?: string } = {};
+
+  try {
+    browser = await puppeteer.launch({
+      headless: false,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+
+    const targetUrlKeyword = "getstudentattendancedetail";
+
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      if (request.url().includes(targetUrlKeyword)) {
+        const headers = request.headers();
+        if (headers["localname"]) {
+          result.localname = headers["localname"];
+        }
+        const postData = request.postData();
+        if (postData) {
+          result.payload = postData;
+        }
+      }
+      request.continue();
+    });
+
+    await page.goto("https://webportal.juit.ac.in:6011/studentportal/#/", {
+      waitUntil: "networkidle2",
+    });
+
+    await page.evaluate((token) => {
+      localStorage.setItem("Token", token);
+      localStorage.setItem("Username", "231030118");
+      localStorage.setItem("activeform", "My Attendance");
+      localStorage.setItem("bypassValue", "fG3a4YsgeK/IJEK4+vjHjg==");
+      localStorage.setItem("clientid", "JAYPEE");
+      localStorage.setItem("enrollmentno", "231030118");
+      localStorage.setItem("instituteid", "INID2201J000001");
+      localStorage.setItem(
+        "institutename",
+        "JAYPEE UNIVERSITY OF INFORMATION TECHNOLOGY"
+      );
+      localStorage.setItem("membertype", "S");
+      localStorage.setItem("name", "SMARTH VERMA");
+      localStorage.setItem("otppwd", "PWD");
+      localStorage.setItem("rejectedData", "NoData");
+      localStorage.setItem(
+        "tokendate",
+        "Thu Jul 09 2025 16:33:31 GMT+0530 (India Standard Time)"
+      );
+      localStorage.setItem("userid", "USID2311A0000264");
+      localStorage.setItem("usertypeselected", "S");
+
+      sessionStorage.setItem("clientidforlink", "JUIT");
+      sessionStorage.setItem(
+        "phantom.contentScript.providerInjectionOptions.v3",
+        '{"hideProvidersArray":false,"dontOverrideWindowEthereum":false}'
+      );
+      sessionStorage.setItem(
+        "tokendate",
+        "Wed Jul 09 2025 16:33:31 GMT+0530 (India Standard Time)"
+      );
+    }, token);
+
+    await page.goto(
+      "https://webportal.juit.ac.in:6011/studentportal/#/student/myclassattendance",
+      { waitUntil: "networkidle2" }
+    );
+    const timeBefore = Date.now();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await page.waitForSelector("#mat-select-0 .mat-mdc-select-trigger", {
+      visible: true,
+    });
+    await page.evaluate(() => {
+      const trigger = document.querySelector(
+        "#mat-select-0 .mat-mdc-select-trigger"
+      ) as HTMLElement;
+      if (trigger) trigger.click();
+    });
+
+    await page.waitForSelector(".mat-mdc-option span", { visible: true });
+
+    const allSemesterCodes = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll(".mat-mdc-option span")).map(
+        (el) => el.textContent?.trim()
+      );
+    });
+    console.log("Available Semester Codes:", allSemesterCodes);
+
+    const semesterCode = "2025ODDSEM";
+    await page.evaluate((semesterCode) => {
+      const options = Array.from(
+        document.querySelectorAll(".mat-mdc-option span")
+      );
+      const target = options.find(
+        (el) => el.textContent?.trim() === semesterCode
+      );
+      if (target) (target as HTMLElement).click();
+    }, semesterCode);
+
+    await page.click('button[aria-label="Submit"]');
+
+    for (let i = 0; i < 30; i++) {
+      if (result.localname && result.payload) break;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    await Promise.all([
+      redis.set("localname", result.localname || ""),
+      redis.set("payload", result.payload || ""),
+    ]);
+
+    const timeAfter = Date.now();
+    const duration = timeAfter - timeBefore;
+
+    res.status(200).json({
+      message: "Extraction complete and data stored in Redis",
+      data: result,
+      duration,
+      semesterCode,
+      allSemesterCodes,
+    });
+  } catch (error: any) {
+    console.error("Extraction failed:", error);
+    res.status(500).json({
+      error: "Extraction failed",
+      details: error.message,
+    });
+  } finally {
+    if (browser) await browser.close();
   }
 };

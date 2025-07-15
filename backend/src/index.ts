@@ -1,6 +1,10 @@
 import dotenv from "dotenv";
 import express from "express";
-import { fetchAttendanceDetails, loginSimple } from "./controllers/controller";
+import {
+  extractPayloadAndLocalname,
+  fetchAttendanceDetails,
+  loginSimple,
+} from "./controllers/controller";
 import "./redis";
 
 dotenv.config();
@@ -12,6 +16,7 @@ app.use(express.json());
 
 app.post("/login", loginSimple);
 app.get("/getAttendanceDetails", fetchAttendanceDetails);
+app.get("/worker", extractPayloadAndLocalname);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
