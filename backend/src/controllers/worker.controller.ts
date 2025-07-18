@@ -608,6 +608,37 @@ export const detailAttendence = async (req: Request, res: Response) => {
     for (let i = 0; i < linksToClick.length; i++) {
       const linkData = linksToClick[i];
 
+      // Reset current payload holder for each click
+      let currentPayload: string | null = null;
+
+      const requestListener = async (request: puppeteer.HTTPRequest) => {
+        try {
+          if (
+            targetUrlKeywords.some((keyword) => request.url().includes(keyword))
+          ) {
+            const postData = request.postData();
+            if (postData) {
+              currentPayload = postData;
+              console.log(
+                `Captured payload for ${linkData.subjectCode}:`,
+                postData
+              );
+
+              await redis.hset(`Subject`, linkData.subjectCode, postData);
+            }
+          }
+
+          if (!request.isInterceptResolutionHandled()) {
+            await request.continue();
+          }
+        } catch (err) {
+          console.error("Request handling error:", err);
+        }
+      };
+
+      // Attach temporary listener
+      page.on("request", requestListener);
+
       try {
         console.log(
           `Clicking link ${i + 1}/${linksToClick.length} for subject: ${
@@ -615,27 +646,21 @@ export const detailAttendence = async (req: Request, res: Response) => {
           }`
         );
 
-        // Click the specific link in the Overall LTP column
         const clickResult = await page.evaluate((rowIndex) => {
           const table = document.querySelector("#pn_id_1-table");
           if (!table) return { success: false, error: "Table not found" };
 
           const rows = table.querySelectorAll("tbody tr");
           const targetRow = rows[rowIndex];
-
           if (!targetRow) return { success: false, error: "Row not found" };
 
           const cells = targetRow.querySelectorAll("td");
-          if (cells.length < 6)
-            return { success: false, error: "Not enough cells in row" };
-
-          const overallLTPCell = cells[5]; // 6th column (index 5) is Overall LTP(%)
+          const overallLTPCell = cells[5];
           const overallLTPLink = overallLTPCell.querySelector("a.mylink");
 
           if (!overallLTPLink)
             return { success: false, error: "Link not found in cell" };
 
-          // Click the link
           try {
             (overallLTPLink as HTMLElement).click();
             return {
@@ -648,18 +673,16 @@ export const detailAttendence = async (req: Request, res: Response) => {
           }
         }, linkData.rowIndex);
 
+        // Add result + payload
         clickedLinksData.push({
           ...linkData,
-          clickResult: clickResult,
+          clickResult,
           clickedAt: new Date().toISOString(),
-        });
+        }); ``
 
         console.log(`Click result for ${linkData.subjectCode}:`, clickResult);
 
-        // Wait for any potential page updates or network requests
         await new Promise((resolve) => setTimeout(resolve, 500));
-
-        // Wait 1 second before clicking the next link (unless it's the last one)
         if (i < linksToClick.length - 1) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
@@ -672,7 +695,11 @@ export const detailAttendence = async (req: Request, res: Response) => {
           ...linkData,
           clickResult: { success: false, error: error.message },
           clickedAt: new Date().toISOString(),
+          capturedPayload: null,
         });
+      } finally {
+        // Remove listener to avoid memory leaks
+        page.off("request", requestListener);
       }
     }
 
@@ -704,7 +731,6 @@ export const detailAttendence = async (req: Request, res: Response) => {
     data: {
       localname: result.localname,
       payload: result.payload,
-      overallLTP: result.overallLTP,
       clickedLinks: result.clickedLinks,
       summary: {
         totalSubjects: result.overallLTP?.length || 0,
@@ -721,4 +747,3 @@ export const detailAttendence = async (req: Request, res: Response) => {
     },
   });
 };
-
