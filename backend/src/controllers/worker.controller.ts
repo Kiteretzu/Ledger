@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import * as puppeteer from "puppeteer";
-import redis from "../redis"; // Adjust path as needed
+import {
+  setHashWithMidnightExpiry,
+  setKeyWithMidnightExpiry,
+} from "../helper/redistExpriation";
 
 export const extractExamsData = async (req: Request, res: Response) => {
   const token = req.query.token as string;
@@ -252,7 +255,7 @@ export const extractExamsData = async (req: Request, res: Response) => {
 
         // Store in Redis if payload exists
         if (semesterCode && result.payload) {
-          await redis.hset(`exams`, semesterCode, result.payload);
+          setHashWithMidnightExpiry(`Exams`, semesterCode, result.payload);
         }
 
         console.log(`Successfully processed semester: ${semesterCode}`);
@@ -270,7 +273,9 @@ export const extractExamsData = async (req: Request, res: Response) => {
     const timeAfter = Date.now();
     const duration = timeAfter - timeBefore;
 
-    await redis.set("localname", result?.localname || "Unknown");
+    setKeyWithMidnightExpiry("localname", result?.localname || "Unknown");
+    setKeyWithMidnightExpiry("payload", result?.payload || "No Payload");
+
     res.status(200).json({
       message: "Exam data extraction complete for all semester codes",
       data: extractedExamsData,
@@ -428,7 +433,7 @@ export const extractAttendenceData = async (req: Request, res: Response) => {
       });
 
       if (semesterCode && result.payload) {
-        await redis.hset(`attendance`, semesterCode, result.payload);
+        setHashWithMidnightExpiry(`attendance`, semesterCode, result.payload);
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -564,13 +569,22 @@ export const detailAttendence = async (req: Request, res: Response) => {
       if (target) (target as HTMLElement).click();
     }, semesterCode);
 
-    await page.click('button[aria-label="Submit"]');
     await new Promise((resolve) => setTimeout(resolve, 1000));
+    await page.click('button[aria-label="Submit"]');
+    // ✅ Wait until at least one row is visible after table loads
+    await page.waitForSelector("p-table table tbody tr", {
+      visible: true,
+      timeout: 5000,
+    });
 
+    console.log("hit the submit");
     // Extract Overall LTP data after the table loads
     const overallLTPData = await page.evaluate(() => {
-      const table = document.querySelector("#pn_id_1-table");
+      const table = document.querySelector("p-table table");
+      console.log("this is table", table);
       if (!table) return [];
+
+      console.log("we got table", table);
 
       const rows = table.querySelectorAll("tbody tr");
       const data: any[] = [];
@@ -624,7 +638,11 @@ export const detailAttendence = async (req: Request, res: Response) => {
                 postData
               );
 
-              await redis.hset(`Subject`, linkData.subjectCode, postData);
+              setHashWithMidnightExpiry(
+                `Subject`,
+                linkData.subjectCode,
+                postData
+              );
             }
           }
 
@@ -678,7 +696,8 @@ export const detailAttendence = async (req: Request, res: Response) => {
           ...linkData,
           clickResult,
           clickedAt: new Date().toISOString(),
-        }); ``
+        });
+        ``;
 
         console.log(`Click result for ${linkData.subjectCode}:`, clickResult);
 

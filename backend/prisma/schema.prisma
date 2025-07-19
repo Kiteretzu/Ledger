@@ -1,0 +1,132 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // You can change this to "mysql", "sqlite", etc.
+  url      = env("DATABASE_URL")
+}
+
+// schema.prisma
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // This is the "back-relation" to Student.
+  // It indicates that a User *might* have one Student record associated with them.
+  student Student?
+}
+
+model Student {
+  id             String  @id @default(uuid())
+  apaarid        String? @unique
+  registrationNo String  @unique
+  academicYear   String
+  admissionYear  String
+  batch          String?
+  programCode    String
+  branch         String
+  semester       Int     @default(0)
+  sectionCode    String?
+
+  studentName            String
+  dateOfBirth            DateTime
+  gender                 String
+  bloodGroup             String?
+  nationality            String
+  category               String
+  studentCellNo          String?
+  studentTelephoneNo     String?
+  studentEmailId         String?
+  studentPersonalEmailId String?
+  fathersName            String
+  motherName             String
+  parentCellNo           String?
+  parentTelephoneNo      String?
+  parentEmailId          String?
+  designation            String?
+  bankName               String?
+  bankAccountNo          String?
+  studentPhotoEvent      String?
+  photo                  String?
+  signature              String?
+
+  // Current Address
+  cAddress1   String?
+  cAddress2   String?
+  cAddress3   String?
+  cCityName   String?
+  cDistrict   String?
+  cStateName  String?
+  cPostalCode Int?
+
+  // Permanent Address
+  pAddress1   String?
+  pAddress2   String?
+  pAddress3   String?
+  pCityName   String?
+  pDistrict   String?
+  pStateName  String?
+  pPostalCode Int?
+
+  qualifications Qualification[]
+
+  examsRegistrations       ExamsRegistration[]
+  attendenceRegisterations AttendenceRegisteration[]
+
+  username String? @unique
+  user     User?   @relation(fields: [username], references: [username])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Qualification {
+  id                String  @id @default(uuid())
+  studentId         String
+  student           Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  qualificationCode String
+  yearOfPassing     Int
+  fullMarks         Int
+  obtainedMarks     Int
+  percentageMarks   Float
+  division          Int
+  grade             String?
+  cgpa              Float?
+  boardName         String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ExamsRegistration {
+  id                   String   @id @default(uuid())
+  registrationId       String   @unique
+  registrationDesc     String
+  registrationCode     String   @unique
+  registrationDateFrom DateTime
+  registrationDateTo   DateTime
+
+  // Many-to-many relationship with Student
+  students Student[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AttendenceRegisteration {
+  id               String @id @default(uuid())
+  registrationId   String @unique
+  registrationCode String @unique
+
+  students Student[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

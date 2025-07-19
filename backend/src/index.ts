@@ -1,12 +1,23 @@
 import dotenv from "dotenv";
 import express from "express";
-import { fetchAttendanceDetails, loginSimple } from "./controllers/controller";
+import {
+  fetchAttendanceDetails,
+  fetchExamDetails,
+  fetchSubjectDetails,
+  loginSimple,
+} from "./controllers/controller";
 import {
   detailAttendence,
   extractAttendenceData,
   extractExamsData,
 } from "./controllers/worker.controller";
 import "./redis";
+import {
+  fetchAttenceCode,
+  fetchExamCode,
+  fetchStudentPersonalInfo,
+} from "./controllers/common.controllers";
+import { fetchDbExamCodes } from "./helper/db_helper/dbFetcher/fetchExamCodes";
 
 dotenv.config();
 
@@ -16,11 +27,35 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 app.post("/login", loginSimple);
-app.get("/getAttendanceDetails", fetchAttendanceDetails);
-app.get("/getexamsDetails", fetchAttendanceDetails); // Assuming exams details are fetched similarly
 app.get("/worker", extractAttendenceData);
+app.get("/getAttendanceDetails", fetchAttendanceDetails);
 app.get("/worker2", extractExamsData);
+app.get("/getexamsDetails", fetchExamDetails); // Assuming exams details are fetched similarly
 app.get("/detailAttendence", detailAttendence);
+app.get("/getProfile", fetchStudentPersonalInfo);
+app.get("/getAttendanceCode", fetchAttenceCode);
+app.get("/getExamsCode", fetchExamCode);
+app.get("/getSubjectDetails", fetchSubjectDetails); // Assuming this is for subjects
+
+app.get("/speedTest-fetchExamCodes", (req, res) => {
+  const username = req.query.username as string;
+  if (!username) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+  fetchDbExamCodes(username)
+    .then((semestercode) => {
+      if (!semestercode) {
+        return res
+          .status(404)
+          .json({ error: "No exam codes found for this user" });
+      }
+      res.status(200).json({ semestercode });
+    })
+    .catch((error) => {
+      console.error("Error fetching exam codes:", error);
+      res.status(500).json({ error: "Failed to fetch exam codes" });
+    });
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

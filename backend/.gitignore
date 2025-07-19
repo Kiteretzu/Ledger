@@ -10,3 +10,5 @@ dist
 *.png
 *.jpg
 *.jpeg
+
+/src/generated/prisma
