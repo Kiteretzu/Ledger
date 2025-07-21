@@ -13,11 +13,13 @@ datasource db {
 // schema.prisma
 
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(uuid())
+  username    String    @unique
+  password    String
+  token       String?   @unique
+  tokenExpiry DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // This is the "back-relation" to Student.
   // It indicates that a User *might* have one Student record associated with them.
@@ -84,14 +86,15 @@ model Student {
   username String? @unique
   user     User?   @relation(fields: [username], references: [username])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  Semester  Semester[]
 }
 
 model Qualification {
-  id                String  @id @default(uuid())
+  id                String   @id @default(uuid())
   studentId         String
-  student           Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student           Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   qualificationCode String
   yearOfPassing     Int
   fullMarks         Int
@@ -101,8 +104,8 @@ model Qualification {
   grade             String?
   cgpa              Float?
   boardName         String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model ExamsRegistration {
@@ -129,4 +132,27 @@ model AttendenceRegisteration {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Semester {
+  id        String    @id @default(uuid())
+  label     String // e.g., "1", "2", "Odd-1", etc.
+  studentId String
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjects  Subject[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Subject {
+  id         String   @id @default(uuid())
+  name       String
+  code       String
+  semesterId String
+  semester   Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  attendance Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([code, semesterId]) // ✅ This enables code_semesterId compound query
 }
