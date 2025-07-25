@@ -16,6 +16,7 @@
     "@repo/aws_utils": "workspace:",
     "@repo/db": "workspace:",
     "@repo/redis": "workspace:",
+    "@repo/puppeteer_utils": "workspace:",
     "axios": "^1.10.0",
     "bullmq": "^5.56.5",
     "dotenv": "^17.1.0",
