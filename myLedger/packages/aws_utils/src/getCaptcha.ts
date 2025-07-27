@@ -3,25 +3,22 @@ import {
   DetectDocumentTextCommand,
 } from "@aws-sdk/client-textract";
 import fs from "fs";
+
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ path: __dirname + "/../.env" }); // Initialize Textract client
 
-// AWS credentials
-const AWS_ACCESS_KEY = process.env.AWS_ACCESS_KEY_ID!;
-const AWS_SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY!;
-const AWS_REGION = process.env.AWS_REGION!;
+console.log("REgion", process.env.AWS_REGION);
 
-// Initialize Textract client
 const client = new TextractClient({
-  region: AWS_REGION,
+  region: process.env.AWS_REGION!,
   credentials: {
-    accessKeyId: AWS_ACCESS_KEY,
-    secretAccessKey: AWS_SECRET_KEY,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
 
 // Function to extract text from image using AWS Textract
-async function extractTextFromImage(imagePath) {
+async function extractTextFromImage(imagePath: string) {
   const imageBytes = fs.readFileSync(imagePath);
 
   const command = new DetectDocumentTextCommand({

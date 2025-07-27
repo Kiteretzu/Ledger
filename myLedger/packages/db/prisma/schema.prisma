@@ -30,26 +30,26 @@ model Student {
   id             String  @id @default(uuid())
   apaarid        String? @unique
   registrationNo String  @unique
-  academicYear   String
-  admissionYear  String
+  academicYear   String?
+  admissionYear  String?
   batch          String?
-  programCode    String
-  branch         String
+  programCode    String?
+  branch         String?
   semester       Int     @default(0)
   sectionCode    String?
 
-  studentName            String
-  dateOfBirth            DateTime
-  gender                 String
+  studentName            String?
+  dateOfBirth            DateTime?
+  gender                 String?
   bloodGroup             String?
-  nationality            String
-  category               String
+  nationality            String?
+  category               String?
   studentCellNo          String?
   studentTelephoneNo     String?
   studentEmailId         String?
   studentPersonalEmailId String?
-  fathersName            String
-  motherName             String
+  fathersName            String?
+  motherName             String?
   parentCellNo           String?
   parentTelephoneNo      String?
   parentEmailId          String?

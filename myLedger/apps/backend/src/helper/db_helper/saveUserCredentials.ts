@@ -1,5 +1,7 @@
 import { User } from "@repo/db/client";
 import { client as prisma } from "@repo/db/client"; // Adjust the import path as necessary
+import { timeout } from "puppeteer/lib/esm/puppeteer/puppeteer.js";
+import { areAllSubjectsPayloadAvailable } from "../tester";
 
 export async function saveUserCredentials(
   username: string,
@@ -38,7 +40,39 @@ export async function saveUserCredentials(
       },
     });
 
+    const newStudent = await prisma.student.create({
+      data: {
+        username, // links to existing User.username
+        registrationNo: username,
+        semester: 0,
+        academicYear: new Date().getFullYear().toString(),
+        programCode: "null",
+        branch: "null",
+        admissionYear: new Date().getFullYear().toString(),
+      },
+    });
+
+    console.log("Student created:", newStudent);
+
     console.log(`User '${username}' saved successfully.`);
+
+    const url = `http://localhost:2231/getAttendanceCode?token=${token}&username=${username}`;
+
+    const allAttenCodes = await fetch(url);
+    const allAttenCodesJson = await allAttenCodes.json();
+
+    const allSemList = allAttenCodesJson.data.response.semlist.map(
+      (sem: any) => sem.registrationcode
+    );
+
+    console.log("AllSemList", allSemList);
+
+    await Promise.all(
+      allSemList.map((sem: string) =>
+        areAllSubjectsPayloadAvailable(username, token!, sem)
+      )
+    );
+    // WIP: checker if new users has all the subject codes in there or not
     return newUser;
   } catch (error: any) {
     console.error(

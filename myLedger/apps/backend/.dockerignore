@@ -1,0 +1,19 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
+
+# TurboRepo cache
+.turbo
+
+# Environment files
+.env
+.env.local
+
+# Git files
+.git
+.gitignore
+
+# OS-specific files
+.DS_Store

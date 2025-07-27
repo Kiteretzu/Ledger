@@ -40,8 +40,6 @@ export const loginSimple = async (req: Request, res: Response) => {
   }
 };
 
-//
-
 // Controller to fetch attendance details from JUIT web portal
 export const fetchAttendanceDetails = async (req: Request, res: Response) => {
   try {
@@ -135,7 +133,7 @@ export const fetchSubjectDetails = async (req: Request, res: Response) => {
 
     if (!payload) {
       return res.status(404).json({
-        error: "Payload not found for the specified semester",
+        error: `Payload not found for the ${subjectCode}`,
       });
     }
 

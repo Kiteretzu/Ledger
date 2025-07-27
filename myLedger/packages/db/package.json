@@ -7,15 +7,17 @@
     "./client": "./src/index.ts"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "echo 'db build (no-op)'",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "devDependencies": {
-    "prisma": "6.10.1"
-  },
   "dependencies": {
-    "@prisma/client": "6.10.1"
-  }
+    "@prisma/client": "6.10.1",
+    "prisma": "^6.12.0"
+  },
+  "files": [
+    "prisma/schema.prisma"
+  ]
 }
