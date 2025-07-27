@@ -32,6 +32,7 @@ app.get("/getExamsCode", fetchExamCode);
 app.get("/getSubjectDetails", fetchSubjectDetails); // Assuming this is for subjects
 app.get("/worker3", getAllPossibleSubjectCodes);
 
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
