@@ -21,14 +21,14 @@ jobs:
       - name: Build and push Backend Docker image
         run: |
           IMAGE=my-ledger-backend:${{ github.sha }}
-          docker build -f myLedger/apps/backend/Dockerfile -t $IMAGE myLedger/apps/backend
+          docker build -f myLedger/apps/backend/Dockerfile -t $IMAGE myLedger
           docker push $IMAGE
 
       # Build worker image
       - name: Build and push Worker Docker image
         run: |
           IMAGE=my-ledger-worker:${{ github.sha }}
-          docker build -f myLedger/apps/worker/Dockerfile -t $IMAGE myLedger/apps/worker
+          docker build -f myLedger/apps/worker/Dockerfile -t $IMAGE myLedger
           docker push $IMAGE
 
       # Update GitOps repo
