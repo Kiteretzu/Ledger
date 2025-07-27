@@ -1,8 +1,7 @@
 name: CI Build and Push
 
 on:
-  push:
-    branches: [ production ]
+  workflow_call:
 
 jobs:
   build:
