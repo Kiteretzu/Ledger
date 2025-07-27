@@ -1,5 +1,6 @@
 {
   "name": "myLedger",
+  "packageManager": "pnpm@9.1.0",
   "private": true,
   "scripts": {
     "build": "turbo run build",
