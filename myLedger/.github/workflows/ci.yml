@@ -17,20 +17,30 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
+      # Build backend (API) image
+      - name: Build and push Backend Docker image
         run: |
-          IMAGE=myapp:${{ github.sha }}
-          docker build -t $IMAGE .
+          IMAGE=myLedger-backend:${{ github.sha }}
+          docker build -f apps/backend/Dockerfile -t $IMAGE apps/backend
           docker push $IMAGE
 
+      # Build worker image
+      - name: Build and push Worker Docker image
+        run: |
+          IMAGE=myLedger-worker:${{ github.sha }}
+          docker build -f apps/worker/Dockerfile -t $IMAGE apps/worker
+          docker push $IMAGE
+
+      # Update GitOps repo
       - name: Update manifests repo (GitOps)
         run: |
           git clone https://x-access-token:${{ secrets.K8S_REPO_TOKEN }}@github.com/Kiteretzu/myledger-k8s.git
           cd myledger-k8s
-          IMAGE=myapp:${{ github.sha }}
-          # Update deployment.yaml image tag
-          sed -i "s|image: .*$|image: $IMAGE|" deployment.yaml
+          # Update backend deployment
+          sed -i "s|image: myapp-backend:.*|image: myapp-backend:${{ github.sha }}|" deployment-backend.yaml
+          # Update worker deployment
+          sed -i "s|image: myapp-worker:.*|image: myapp-worker:${{ github.sha }}|" deployment-worker.yaml
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git commit -am "Update image to $IMAGE"
+          git commit -am "Update images to SHA ${{ github.sha }}"
           git push
