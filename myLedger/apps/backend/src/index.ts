@@ -30,7 +30,6 @@ app.get("/getProfile", fetchStudentPersonalInfo);
 app.get("/getAttendanceCode", fetchAttenceCode);
 app.get("/getExamsCode", fetchExamCode);
 app.get("/getSubjectDetails", fetchSubjectDetails); // Assuming this is for subjects
-
 app.get("/worker3", getAllPossibleSubjectCodes);
 
 app.listen(PORT, () => {
