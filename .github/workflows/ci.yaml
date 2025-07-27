@@ -20,14 +20,14 @@ jobs:
       # Build backend (API) image
       - name: Build and push Backend Docker image
         run: |
-          IMAGE=my-ledger-backend:${{ github.sha }}
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/my-ledger-backend:${{ github.sha }}
           docker build -f myLedger/apps/backend/Dockerfile -t $IMAGE myLedger
           docker push $IMAGE
 
       # Build worker image
       - name: Build and push Worker Docker image
         run: |
-          IMAGE=my-ledger-worker:${{ github.sha }}
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/my-ledger-worker:${{ github.sha }}
           docker build -f myLedger/apps/worker/Dockerfile -t $IMAGE myLedger
           docker push $IMAGE
 
