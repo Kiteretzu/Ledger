@@ -32,15 +32,35 @@ RUN turbo build
 FROM base AS runner
 WORKDIR /app
 
-# Install Chromium for Puppeteer
-RUN apk add --no-cache chromium
+# Install Chromium
+RUN apk add --no-cache \
+  chromium \
+  nss \
+  freetype \
+  harfbuzz \
+  ca-certificates \
+  ttf-freefont \
+  wqy-zenhei \
+  udev \
+  libstdc++
 
-# Let Puppeteer know where Chromium is installed
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
-RUN addgroup --system --gid 1001 backend
-RUN adduser --system --uid 1001 backend
-USER backend
+# Create user
+RUN addgroup --system --gid 1001 backend \
+    && adduser --system --uid 1001 backend
+
+# Create captcha folder and fix permissions
+RUN mkdir -p /app/apps/backend/src/captcha \
+    && chown -R backend:backend /app/apps/backend/src/captcha
+
 COPY --from=installer /app .
+
+# Fix permissions again after copy
+RUN mkdir -p /app/apps/backend/src/captcha \
+    && chown -R backend:backend /app/apps/backend/src/captcha
+
+USER backend
 
 CMD ["node", "apps/backend/dist/index.js"]

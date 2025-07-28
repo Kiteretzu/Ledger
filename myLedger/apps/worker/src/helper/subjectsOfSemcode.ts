@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer";
 import { setHashWithMidnightExpiry } from "@repo/redis/redis-expiration"; // adjust the path
+import { getBrowser } from "@repo/puppeteer_utils/browser";
 
 export async function subjectsOfSemcode(token: string, semesterCode: string) {
   let browser: puppeteer.Browser | null = null;
@@ -13,10 +14,7 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
   } = {};
 
   try {
-    browser = await puppeteer.launch({
-      headless: false, // set to false for debugging, true for production
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    browser = await getBrowser();
 
     const page = await browser.newPage();
 
@@ -89,8 +87,7 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
       { waitUntil: "networkidle2" }
     );
 
-
-    console.log('this is semesterCode', semesterCode);  
+    console.log("this is semesterCode", semesterCode);
 
     await new Promise((r) => setTimeout(r, 1000));
     await page.waitForSelector("#mat-select-0 .mat-mdc-select-trigger", {

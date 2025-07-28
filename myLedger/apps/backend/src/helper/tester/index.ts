@@ -2,6 +2,7 @@ import redis, { subjectQueue } from "@repo/redis/main";
 import { setHashWithMidnightExpiry } from "@repo/redis/redis-expiration";
 import puppeteer from "puppeteer";
 import { client as prisma } from "@repo/db/client";
+import { getBrowser } from "@repo/puppeteer_utils/browser";
 
 export async function areAllSubjectsPayloadAvailable(
   username: string,
@@ -12,9 +13,7 @@ export async function areAllSubjectsPayloadAvailable(
   const result: { localname?: string; payload?: string } = {};
 
   try {
-    browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    browser = await getBrowser();
 
     const page = await browser.newPage();
     const targetUrlKeywords = ["getstudentattendancedetail"];

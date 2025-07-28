@@ -1,21 +1,32 @@
+import { login } from "@repo/puppeteer_utils/login";
+import redis from "@repo/redis/main";
 import axios from "axios";
 import { Request, Response } from "express";
-import puppeteer from "puppeteer";
-import fs from "fs";
-import path from "path";
-import { extractTextFromImage } from "@repo/aws_utils/";
-import redis from "@repo/redis/main";
-import { saveUserCredentials } from "../helper/db_helper/saveUserCredentials";
 import { saveSubjectSemester } from "../helper/db_helper/saveSubjectSemester";
-import { login } from "@repo/puppeteer_utils/login";
+import { saveUserCredentials } from "../helper/db_helper/saveUserCredentials";
 
 export const loginSimple = async (req: Request, res: Response) => {
   const { username, password } = req.body;
   let browser;
 
   try {
-    const { captchaText, currentUrl, isLoginSuccessful, message, token } =
-      await login(username, password);
+    const {
+      isFailedCaptcha,
+      captchaText,
+      currentUrl,
+      isLoginSuccessful,
+      message,
+      token,
+    } = await login(username, password);
+
+    console.log("this is the isFailedCaptcha", isFailedCaptcha);
+
+    if (isFailedCaptcha) {
+      return res.status(400).json({
+        error: "Login failed due to captcha",
+        message: "Please solve the captcha manually",
+      });
+    }
 
     void saveUserCredentials(username, password, token);
 
