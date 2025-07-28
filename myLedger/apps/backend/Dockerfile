@@ -31,6 +31,13 @@ RUN turbo build
 # 4. Runner: Run the app
 FROM base AS runner
 WORKDIR /app
+
+# Install Chromium for Puppeteer
+RUN apk add --no-cache chromium
+
+# Let Puppeteer know where Chromium is installed
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 RUN addgroup --system --gid 1001 backend
 RUN adduser --system --uid 1001 backend
 USER backend
