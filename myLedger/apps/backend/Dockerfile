@@ -51,7 +51,15 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 RUN addgroup --system --gid 1001 backend \
     && adduser --system --uid 1001 backend
 
+# Create captcha folder and fix permissions
+RUN mkdir -p /app/apps/backend/src/captcha \
+    && chown -R backend:backend /app/apps/backend/src/captcha
+
 COPY --from=installer /app .
+
+# Fix permissions again after copy
+RUN mkdir -p /app/apps/backend/src/captcha \
+    && chown -R backend:backend /app/apps/backend/src/captcha
 
 USER backend
 
