@@ -2,14 +2,14 @@ import puppeteer from "puppeteer";
 import fs from "fs";
 import path from "path";
 import { extractTextFromImage } from "@repo/aws_utils"; // adjust import path if needed
+import { getBrowser } from "./utils/browserSingleton"; // adjust import path if needed
 
 export const login = async (username: string, password: string) => {
   let browser;
+  let isFailedCaptcha = false; // shared flag
 
   try {
-    browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    browser = await getBrowser();
 
     const page = await browser.newPage();
 
@@ -19,11 +19,13 @@ export const login = async (username: string, password: string) => {
         try {
           const data = await response.json(); // Get payload
           console.log("Response Payload:", data);
-          if (data.status.responseStatus == "Failure") {
+          if (data.status.errors.length > 0) {
             throw new Error("Login failed: captcha failed ");
             return;
           }
-        } catch (error) {}
+        } catch (error) {
+          isFailedCaptcha = true;
+        }
       }
     });
 
@@ -60,18 +62,17 @@ export const login = async (username: string, password: string) => {
     if (!captchaDataUrl) throw new Error("CAPTCHA image not found");
 
     // Save CAPTCHA image locally
+    // Use /tmp for captcha file to avoid relative path issues in container
     const base64Data = captchaDataUrl.split(",")[1];
-    const imagePath = path.join(__dirname, "../src/captcha/captcha.jpg");
-    const dir = path.dirname(imagePath);
+    if (!base64Data) throw new Error("Invalid CAPTCHA data URL format");
+    const imagePath = "/tmp/captcha.jpg";
 
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
+    // Save image to /tmp
     fs.writeFileSync(imagePath, Buffer.from(base64Data, "base64"));
-
     console.log("Reached here", imagePath);
 
-    // Extract text from CAPTCHA
-    const captchaText = await extractTextFromImage("src/captcha/captcha.jpg");
+    // Extract text directly using absolute path
+    const captchaText = await extractTextFromImage(imagePath);
     if (!captchaText) throw new Error("Failed to extract CAPTCHA text");
 
     // Fill CAPTCHA
@@ -90,6 +91,17 @@ export const login = async (username: string, password: string) => {
       page.click('button[aria-label="LOGIN"]'),
       page.waitForNavigation({ waitUntil: "networkidle0", timeout: 15000 }),
     ]);
+
+    if (isFailedCaptcha) {
+      return {
+        isFailedCaptcha: true,
+        captchaText: "",
+        currentUrl: page.url(),
+        isLoginSuccessful: false,
+        message: "Login failed due to captcha",
+        token: "",
+      };
+    }
 
     // Fill password
     await page.evaluate((password) => {
@@ -136,6 +148,7 @@ export const login = async (username: string, password: string) => {
       token,
       isLoginSuccessful,
       captchaText,
+      isFailedCaptcha: false,
     };
   } catch (error: any) {
     if (browser) await browser.close();

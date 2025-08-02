@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "exports": {
-    "./login": "./src/login.ts"
+    "./login": "./src/login.ts",
+    "./browser": "./src/utils/browserSingleton.ts"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

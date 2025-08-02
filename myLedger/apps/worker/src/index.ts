@@ -1,9 +1,7 @@
-import { Worker, Queue } from "bullmq";
+import { Queue, Worker } from "bullmq";
 import dotenv from "dotenv";
 import {
-  detailAttendenceOfSubjectFn,
-  subjectOfEverySemCode,
-  subjectsOfSemcode,
+  subjectsOfSemcode
 } from "./helper/subjectsOfSemcode";
 
 dotenv.config();

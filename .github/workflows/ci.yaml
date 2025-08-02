@@ -2,7 +2,7 @@ name: CI Build and Push
 
 on:
   push:
-    branches: [ production ]
+    branches: [production]
 
 jobs:
   build:
@@ -20,15 +20,15 @@ jobs:
       # Build backend (API) image
       - name: Build and push Backend Docker image
         run: |
-          IMAGE=myLedger-backend:${{ github.sha }}
-          docker build -f apps/backend/Dockerfile -t $IMAGE apps/backend
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/my-ledger-backend:${{ github.sha }}
+          docker build -f myLedger/apps/backend/Dockerfile -t $IMAGE myLedger
           docker push $IMAGE
 
       # Build worker image
       - name: Build and push Worker Docker image
         run: |
-          IMAGE=myLedger-worker:${{ github.sha }}
-          docker build -f apps/worker/Dockerfile -t $IMAGE apps/worker
+          IMAGE=${{ secrets.DOCKER_USERNAME }}/my-ledger-worker:${{ github.sha }}
+          docker build -f myLedger/apps/worker/Dockerfile -t $IMAGE myLedger
           docker push $IMAGE
 
       # Update GitOps repo
@@ -36,10 +36,8 @@ jobs:
         run: |
           git clone https://x-access-token:${{ secrets.K8S_REPO_TOKEN }}@github.com/Kiteretzu/myledger-k8s.git
           cd myledger-k8s
-          # Update backend deployment
-          sed -i "s|image: myapp-backend:.*|image: myapp-backend:${{ github.sha }}|" deployment-backend.yaml
-          # Update worker deployment
-          sed -i "s|image: myapp-worker:.*|image: myapp-worker:${{ github.sha }}|" deployment-worker.yaml
+          sed -i "s|image: .*/my-ledger-worker:.*|image: ${{ secrets.DOCKER_USERNAME }}/my-ledger-worker:${{ github.sha }}|" deployment-worker.yaml
+          sed -i "s|image: .*/my-ledger-backend:.*|image: ${{ secrets.DOCKER_USERNAME }}/my-ledger-backend:${{ github.sha }}|" deployment-backend.yaml
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git commit -am "Update images to SHA ${{ github.sha }}"

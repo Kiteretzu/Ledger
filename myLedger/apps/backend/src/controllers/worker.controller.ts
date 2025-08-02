@@ -1,13 +1,13 @@
-import { Request, Response } from "express";
-import * as puppeteer from "puppeteer";
+import { client as prisma } from "@repo/db/client"; // Adjust the import path as necessary
 import {
   setHashWithMidnightExpiry,
   setKeyWithMidnightExpiry,
 } from "@repo/redis/redis-expiration";
-import { client as prisma } from "@repo/db/client"; // Adjust the import path as necessary
+import { Request, Response } from "express";
+import * as puppeteer from "puppeteer";
 
+import { getBrowser } from "@repo/puppeteer_utils/browser";
 import redis, { subjectQueue } from "@repo/redis/main";
-import bullmq from "bullmq";
 
 export const extractAttendenceData = async (req: Request, res: Response) => {
   const token = req.query.token as string;
@@ -15,10 +15,7 @@ export const extractAttendenceData = async (req: Request, res: Response) => {
   const result: { localname?: string; payload?: string } = {};
 
   try {
-    browser = await puppeteer.launch({
-      headless: false,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    browser = await getBrowser();
 
     const page = await browser.newPage();
 
@@ -264,8 +261,6 @@ export const extractAttendenceData = async (req: Request, res: Response) => {
   }
 };
 
-
-
 export const getAllPossibleSubjectCodes = async (
   req: Request,
   res: Response
@@ -379,7 +374,6 @@ export const getAllPossibleSubjectCodes = async (
 
   res.json({ message: "All users are sent to queue", selectedUsers });
 };
-
 
 //WIP complete this properly
 export const getAllpossibleAttendCodes = async (
