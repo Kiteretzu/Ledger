@@ -40,7 +40,7 @@ export async function getAllAttendenceCodes(
         const postData = request.postData();
         if (postData) {
           result.payload = postData;
-          console.log("Payload captured for", semesterCode, postData);
+          console.log("Payload captured for", postData);
         }
       }
       request.continue();
