@@ -1,6 +1,9 @@
 # 1. Base image
 FROM node:20 AS base
 
+# Skip Puppeteer’s Chromium download (we’ll install Chrome manually)
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 # 2. Builder: Prune with Turbo
 FROM base AS builder
 WORKDIR /app
@@ -73,5 +76,9 @@ WORKDIR /app
 
 
 COPY --from=installer /app .
+
+
+# Install Chromium for Puppeteer
+RUN npx puppeteer browsers install chrome
 
 CMD ["node", "apps/worker/dist/index.js"]
