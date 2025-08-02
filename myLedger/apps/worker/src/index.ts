@@ -13,6 +13,7 @@ const connection = {
 };
 
 console.log("this is redisURL", process.env.REDIS_URL, connection);
+console.log('this is process ✅', process.env.NODE_ENV);
 
 const worker = new Worker(
   "subject-processing",
