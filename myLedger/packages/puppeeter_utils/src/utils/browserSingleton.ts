@@ -14,7 +14,7 @@ export async function getBrowser(): Promise<Browser> {
     });
   } else {
     return await puppeteer.launch({
-      headless: true,
+      headless: false,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
   }

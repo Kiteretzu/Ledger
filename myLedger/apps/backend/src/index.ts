@@ -8,11 +8,12 @@ import {
 import {
   fetchAttendanceDetails,
   fetchSubjectDetails,
-  loginSimple
+  loginSimple,
 } from "./controllers/controller";
 import {
   extractAttendenceData,
-  getAllPossibleSubjectCodes
+  getAllpossibleAttendCodes,
+  getAllPossibleSubjectCodes,
 } from "./controllers/worker.controller";
 // import "@repo/redis/main";
 
@@ -24,14 +25,13 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 app.post("/login", loginSimple);
-app.get("/worker", extractAttendenceData);
 app.get("/getAttendanceDetails", fetchAttendanceDetails);
 app.get("/getProfile", fetchStudentPersonalInfo);
 app.get("/getAttendanceCode", fetchAttenceCode);
 app.get("/getExamsCode", fetchExamCode);
 app.get("/getSubjectDetails", fetchSubjectDetails); // Assuming this is for subjects
 app.get("/worker3", getAllPossibleSubjectCodes);
-
+app.get("/worker2", getAllpossibleAttendCodes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

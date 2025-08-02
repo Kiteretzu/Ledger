@@ -35,7 +35,7 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
         const postData = request.postData();
         if (postData) {
           result.payload = postData;
-          console.log("Captured payload:", postData);
+          console.log("Captured payload ✅");
         }
       }
       request.continue();
@@ -166,9 +166,7 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
       const clickedLinksData = [];
       const linksToClick = pageData.filter((item) => item.hasLink);
 
-      console.log(
-        `Page ${pageNumber}: Found ${linksToClick.length} links to click`
-      );
+
 
       for (let i = 0; i < linksToClick.length; i++) {
         const linkData = linksToClick[i];
@@ -184,10 +182,6 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
               const postData = request.postData();
               if (postData) {
                 currentPayload = postData;
-                console.log(
-                  `Page ${pageNumber} - Captured payload for ${linkData.subjectCode}:`,
-                  postData
-                );
 
                 setHashWithMidnightExpiry(
                   `Subject`,
@@ -209,9 +203,7 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
         page.on("request", requestListener);
 
         try {
-          console.log(
-            `Page ${pageNumber} - Clicking link ${i + 1}/${linksToClick.length} for subject: ${linkData.subjectCode}`
-          );
+     
 
           const clickResult = await page.evaluate((rowIndex) => {
             const table = document.querySelector("p-table table");
@@ -247,10 +239,6 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
             capturedPayload: currentPayload,
           });
 
-          console.log(
-            `Page ${pageNumber} - Click result for ${linkData.subjectCode}:`,
-            clickResult
-          );
 
           await new Promise((resolve) => setTimeout(resolve, 500));
           if (i < linksToClick.length - 1) {
@@ -364,7 +352,6 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
 
     // Process remaining pages if they exist
     for (let pageNum = 2; pageNum <= totalPages; pageNum++) {
-      console.log(`Processing page ${pageNum}/${totalPages}...`);
 
       const navigated = await navigateToPage(pageNum);
       if (!navigated) {
