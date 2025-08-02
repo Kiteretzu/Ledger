@@ -62,18 +62,17 @@ export const login = async (username: string, password: string) => {
     if (!captchaDataUrl) throw new Error("CAPTCHA image not found");
 
     // Save CAPTCHA image locally
+    // Use /tmp for captcha file to avoid relative path issues in container
     const base64Data = captchaDataUrl.split(",")[1];
-    const imagePath = path.join(__dirname, "../src/captcha/captcha.jpg");
-    const dir = path.dirname(imagePath);
+    if (!base64Data) throw new Error("Invalid CAPTCHA data URL format");
+    const imagePath = "/tmp/captcha.jpg";
 
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
+    // Save image to /tmp
     fs.writeFileSync(imagePath, Buffer.from(base64Data, "base64"));
-
     console.log("Reached here", imagePath);
 
-    // Extract text from CAPTCHA
-    const captchaText = await extractTextFromImage("src/captcha/captcha.jpg");
+    // Extract text directly using absolute path
+    const captchaText = await extractTextFromImage(imagePath);
     if (!captchaText) throw new Error("Failed to extract CAPTCHA text");
 
     // Fill CAPTCHA

@@ -7,7 +7,6 @@ import { saveUserCredentials } from "../helper/db_helper/saveUserCredentials";
 
 export const loginSimple = async (req: Request, res: Response) => {
   const { username, password } = req.body;
-  let browser;
 
   try {
     const {
@@ -39,10 +38,6 @@ export const loginSimple = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Login automation failed:", error);
-
-    if (browser) {
-      await browser.close();
-    }
 
     res.status(500).json({
       error: "Login automation failed",
