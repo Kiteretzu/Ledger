@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 // import { subjectsOfSemcode } from "./helper/subjectsOfSemcode";
 // import { getAllAttendenceCodes } from "./helper/getAllAttendenceCodes";
 import { subjectQueue } from "@repo/redis/main";
+import { getAllAttendenceCodes } from "./helper/getAllAttendenceCodes";
+import { subjectsOfSemcode } from "./helper/subjectsOfSemcode";
 
 dotenv.config();
 

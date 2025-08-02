@@ -11,9 +11,8 @@ import {
   loginSimple,
 } from "./controllers/controller";
 import {
-  extractAttendenceData,
   getAllpossibleAttendCodes,
-  getAllPossibleSubjectCodes,
+  getAllPossibleSubjectCodes
 } from "./controllers/worker.controller";
 // import "@repo/redis/main";
 
