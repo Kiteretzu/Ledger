@@ -9,8 +9,6 @@ import * as puppeteer from "puppeteer";
 import { getBrowser } from "@repo/puppeteer_utils/browser";
 import redis, { subjectQueue } from "@repo/redis/main";
 
-
-
 export const getAllPossibleSubjectCodes = async (
   req: Request,
   res: Response
@@ -38,91 +36,134 @@ export const getAllPossibleSubjectCodes = async (
     },
   });
 
-  type User = {
-    username: string;
-    password: string;
-    token: string | null; // Token can be null if expired
-    subjects: Set<string>;
-    semesters: string[]; // <-- NEW
-  };
-
-  // Step 1: Flatten and collect all users with subjects
-  const allSubjects = new Set<string>();
-  const users: User[] = [];
-
-  for (const user of allUsersRaw) {
-    const userSubjects = new Set<string>();
-    const userSemesters: string[] = [];
-
-    if (user.student) {
-      for (const sem of user.student.Semester) {
-        userSemesters.push(sem.label); // collect semester labels
-        for (const subj of sem.subjects) {
-          userSubjects.add(subj.code);
-          allSubjects.add(subj.code);
-        }
-      }
-    }
-
-    users.push({
-      username: user.username,
-      password: user.password,
-      token:
-        user.tokenExpiry && user.tokenExpiry <= new Date() ? null : user.token,
-      subjects: userSubjects,
-      semesters: userSemesters, // store semesters
-    });
-  }
-
-  // Step 2: Greedy Selection
-  const coveredSubjects = new Set<string>();
-  const selectedUsers: {
+  type UserSemester = {
     username: string;
     password: string;
     token: string | null;
-    semesters: string[]; // <-- Include semesters here
+    semesterLabel: string;
+    subjects: Set<string>;
+  };
+
+  // Step 1: Create user-semester combinations with their subjects
+  const allSubjects = new Set<string>();
+  const userSemesters: UserSemester[] = [];
+
+  for (const user of allUsersRaw) {
+    const validToken =
+      user.tokenExpiry && user.tokenExpiry <= new Date() ? null : user.token;
+
+    if (user.student) {
+      for (const sem of user.student.Semester) {
+        const semesterSubjects = new Set<string>();
+
+        for (const subj of sem.subjects) {
+          semesterSubjects.add(subj.code);
+          allSubjects.add(subj.code);
+        }
+
+        // Only add semester if it has subjects
+        if (semesterSubjects.size > 0) {
+          userSemesters.push({
+            username: user.username,
+            password: user.password,
+            token: validToken,
+            semesterLabel: sem.label,
+            subjects: semesterSubjects,
+          });
+        }
+      }
+    }
+  }
+
+  // Step 2: Greedy Selection on user-semester level
+  const coveredSubjects = new Set<string>();
+  const selectedUserSemesters: {
+    username: string;
+    password: string;
+    token: string | null;
+    semesterLabel: string;
   }[] = [];
 
-  while (coveredSubjects.size < allSubjects.size) {
-    let bestUser: User | null = null;
+  while (coveredSubjects.size < allSubjects.size && userSemesters.length > 0) {
+    let bestUserSemester: UserSemester | null = null;
     let maxNewSubjects = 0;
 
-    for (const user of users) {
-      const newSubjects = [...user.subjects].filter(
+    // Find the user-semester combination that covers the most uncovered subjects
+    for (const userSem of userSemesters) {
+      const newSubjects = [...userSem.subjects].filter(
         (subj) => !coveredSubjects.has(subj)
       );
+
       if (newSubjects.length > maxNewSubjects) {
         maxNewSubjects = newSubjects.length;
-        bestUser = user;
+        bestUserSemester = userSem;
       }
     }
 
-    if (!bestUser) break;
+    if (!bestUserSemester || maxNewSubjects === 0) break;
 
-    selectedUsers.push({
-      username: bestUser.username,
-      password: bestUser.password,
-      token: bestUser.token || null,
-      semesters: bestUser.semesters, // include semesters
+    // Add the best user-semester to selected list
+    selectedUserSemesters.push({
+      username: bestUserSemester.username,
+      password: bestUserSemester.password,
+      token: bestUserSemester.token,
+      semesterLabel: bestUserSemester.semesterLabel,
     });
 
-    for (const subj of bestUser.subjects) {
+    // Mark all subjects from this semester as covered
+    for (const subj of bestUserSemester.subjects) {
       coveredSubjects.add(subj);
     }
 
-    users.splice(users.indexOf(bestUser), 1);
+    // Remove the selected user-semester from consideration
+    const index = userSemesters.indexOf(bestUserSemester);
+    userSemesters.splice(index, 1);
   }
 
-  // Step 3: Send to BullMQ
-  for (const user of selectedUsers) {
-    console.log("sending", user);
-    await subjectQueue.add("processSingleUser", user); // Job name remains descriptive
+  // // Step 3: Send to BullMQ - only the absolutely necessary user-semester combinations
+  for (const userSem of selectedUserSemesters) {
+    console.log("Sending user-semester to processSingleUser queue:", {
+      user: {
+        username: userSem.username,
+        password: userSem.password,
+        token: userSem.token,
+        semesterLabel: userSem.semesterLabel,
+      },
+    });
+
+    await subjectQueue.add("processSingleUser", {
+      user: {
+        username: userSem.username,
+        password: userSem.password,
+        token: userSem.token,
+        semesterLabel: userSem.semesterLabel,
+      },
+    });
   }
 
-  console.log("Selected Users Covering All Subjects:", selectedUsers);
-  console.log(`Queued ${selectedUsers.length} users to BullMQ`);
+  console.log(
+    `Queued ${selectedUserSemesters.length} user-semester combinations to BullMQ`
+  );
 
-  res.json({ message: "All users are sent to queue", selectedUsers });
+  // Group by user for summary
+  const userSummary = selectedUserSemesters.reduce(
+    (acc, userSem) => {
+      if (!acc[userSem.username]) {
+        acc[userSem.username] = [];
+      }
+      acc[userSem.username].push(userSem.semesterLabel);
+      return acc;
+    },
+    {} as Record<string, string[]>
+  );
+
+  res.json({
+    message: "Minimal user-semester combinations sent to queue",
+    selectedUserSemesters,
+    userSummary,
+    totalSubjectsCovered: coveredSubjects.size,
+    totalSubjectsAvailable: allSubjects.size,
+  });
 };
 
 export const getAllpossibleAttendCodes = async (

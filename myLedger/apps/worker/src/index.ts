@@ -12,15 +12,12 @@ const connection = {
   url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
 };
 
-console.log("this is redisURL", process.env.REDIS_URL, connection);
-console.log('this is process ✅', process.env.NODE_ENV);
-
 const worker = new Worker(
   "subject-processing",
   async (job) => {
     console.log("Received job data", job.data);
     console.log(`Processing job ${job.id}...`);
-    const user = job.data; // now single user
+    const user = job.data.user; // now single user
 
     console.log(
       `Processing user: ${user.token} with semCode: ${user.semesterLabel}`
@@ -30,13 +27,7 @@ const worker = new Worker(
       if (user.type === "attendanceCode") {
         // If type is attendanceCode, process all semesters
         getAllAttendenceCodes(user.token, user.semesters);
-      } else if (user.semesters && user.semesters.length > 0) {
-        await Promise.all(
-          user.semesters.map((sem: string) =>
-            subjectsOfSemcode(user.token, sem)
-          )
-        );
-      } else {
+      }  else {
         await subjectsOfSemcode(user.token, user.semesterLabel);
       }
 
