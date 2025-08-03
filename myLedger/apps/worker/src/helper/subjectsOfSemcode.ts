@@ -35,7 +35,6 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
         const postData = request.postData();
         if (postData) {
           result.payload = postData;
-          console.log("Captured payload ✅");
         }
       }
       request.continue();
@@ -166,8 +165,6 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
       const clickedLinksData = [];
       const linksToClick = pageData.filter((item) => item.hasLink);
 
-
-
       for (let i = 0; i < linksToClick.length; i++) {
         const linkData = linksToClick[i];
         let currentPayload: string | null = null;
@@ -203,8 +200,6 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
         page.on("request", requestListener);
 
         try {
-     
-
           const clickResult = await page.evaluate((rowIndex) => {
             const table = document.querySelector("p-table table");
             if (!table) return { success: false, error: "Table not found" };
@@ -238,7 +233,6 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
             clickedAt: new Date().toISOString(),
             capturedPayload: currentPayload,
           });
-
 
           await new Promise((resolve) => setTimeout(resolve, 500));
           if (i < linksToClick.length - 1) {
@@ -352,7 +346,6 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
 
     // Process remaining pages if they exist
     for (let pageNum = 2; pageNum <= totalPages; pageNum++) {
-
       const navigated = await navigateToPage(pageNum);
       if (!navigated) {
         console.log(
@@ -384,6 +377,7 @@ export async function subjectsOfSemcode(token: string, semesterCode: string) {
     result.overallLTP = result.allPagesData;
 
     console.log("Multi-page processing complete. Summary:", {
+      semesterCode: semesterCode,
       totalPages: totalPages,
       totalSubjects: result.allPagesData?.length || 0,
       totalLinks: result.clickedLinks?.length || 0,
