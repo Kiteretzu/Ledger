@@ -13,6 +13,7 @@ import {
 import {
   getAllpossibleAttendCodes,
   getAllPossibleSubjectCodes,
+  refreshAllTokens,
 } from "./controllers/worker.controller";
 import redis from "@repo/redis/main";
 // import "@repo/redis/main";
@@ -30,12 +31,26 @@ app.get("/health", (req, res) => {
 
 app.get("/get-redis", async (req, res) => {
   const allPayloads = await redis.hgetall("Subject");
+  const attendancePayloads = await redis.hgetall("attendance");
 
   if (!allPayloads) {
     return res.status(404).json({ error: "No data found in Redis" });
   }
 
-  res.status(200).json(allPayloads);
+  res.status(200).json({ allPayloads, attendancePayloads });
+});
+
+app.get("/clear-redis", async (req, res) => {
+  await redis.flushall((err, succeeded) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ error: "Failed to clear Redis", details: err });
+    }
+    res
+      .status(200)
+      .json({ message: "Redis cleared successfully", success: succeeded });
+  });
 });
 
 app.post("/login", loginSimple);
@@ -44,8 +59,10 @@ app.get("/getProfile", fetchStudentPersonalInfo);
 app.get("/getAttendanceCode", fetchAttenceCode);
 app.get("/getExamsCode", fetchExamCode);
 app.get("/getSubjectDetails", fetchSubjectDetails); // Assuming this is for subjects
-app.get("/worker3", getAllPossibleSubjectCodes);
-app.get("/worker2", getAllpossibleAttendCodes);
+
+app.get("/worker1", getAllpossibleAttendCodes);
+app.get("/worker2", getAllPossibleSubjectCodes);
+app.get('/worker3', refreshAllTokens)
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

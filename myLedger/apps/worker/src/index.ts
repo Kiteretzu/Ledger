@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { subjectQueue } from "@repo/redis/main";
 import { getAllAttendenceCodes } from "./helper/getAllAttendenceCodes";
 import { subjectsOfSemcode } from "./helper/subjectsOfSemcode";
+import { refreshUserToken } from "./helper/refreshUserTokens";
 
 dotenv.config();
 
@@ -27,7 +28,13 @@ const worker = new Worker(
       if (user.type === "attendanceCode") {
         // If type is attendanceCode, process all semesters
         getAllAttendenceCodes(user.token, user.semesters);
-      }  else {
+      } else if (user.type === "refreshToken") {
+        console.log("reached here", user.password);
+
+        await refreshUserToken(user.username, user.password);
+
+        return;
+      } else {
         await subjectsOfSemcode(user.token, user.semesterLabel);
       }
 

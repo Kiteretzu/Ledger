@@ -272,3 +272,19 @@ export const getAllpossibleAttendCodes = async (
     selectedUsers,
   });
 };
+
+export const refreshAllTokens = async (req, res) => {
+  const getAllUsers = await prisma.user.findMany();
+
+  for (const user of getAllUsers) {
+    await subjectQueue.add("refreshToken", {
+      user: {
+        type: "refreshToken",
+        username: user.username,
+        password: user.password,
+      },
+    });
+  }
+
+  res.json({ message: `Queued ${getAllUsers.length} refresh token jobs` });
+};
