@@ -14,7 +14,7 @@ import {
   getAllpossibleAttendCodes,
   getAllPossibleSubjectCodes,
 } from "./controllers/worker.controller";
-import router from "./router";
+import redis from "@repo/redis/main";
 // import "@repo/redis/main";
 
 dotenv.config();
@@ -27,6 +27,17 @@ app.use(express.json());
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
 });
+
+app.get("/get-redis", async (req, res) => {
+  const allPayloads = await redis.hgetall("Subject");
+
+  if (!allPayloads) {
+    return res.status(404).json({ error: "No data found in Redis" });
+  }
+
+  res.status(200).json(allPayloads);
+});
+
 app.post("/login", loginSimple);
 app.get("/getAttendanceDetails", fetchAttendanceDetails);
 app.get("/getProfile", fetchStudentPersonalInfo);
