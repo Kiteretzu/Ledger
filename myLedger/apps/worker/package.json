@@ -14,6 +14,7 @@
   "type": "commonjs",
   "dependencies": {
     "@repo/puppeteer_utils": "workspace:",
+    "@repo/db": "workspace:",
     "@repo/redis": "workspace:",
     "bullmq": "^5.56.5",
     "dotenv": "^17.2.0",

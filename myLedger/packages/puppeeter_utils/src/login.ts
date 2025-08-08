@@ -1,7 +1,5 @@
-import puppeteer from "puppeteer";
-import fs from "fs";
-import path from "path";
 import { extractTextFromImage } from "@repo/aws_utils"; // adjust import path if needed
+import fs from "fs";
 import { getBrowser } from "./utils/browserSingleton"; // adjust import path if needed
 
 export const login = async (username: string, password: string) => {

@@ -72,6 +72,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@repo/db':
+        specifier: 'workspace:'
+        version: link:../../packages/db
       '@repo/puppeteer_utils':
         specifier: 'workspace:'
         version: link:../../packages/puppeeter_utils
