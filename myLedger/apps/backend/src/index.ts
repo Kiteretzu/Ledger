@@ -12,7 +12,7 @@ import {
 } from "./controllers/controller";
 import {
   getAllpossibleAttendCodes,
-  getAllPossibleSubjectCodes
+  getAllPossibleSubjectCodes,
 } from "./controllers/worker.controller";
 // import "@repo/redis/main";
 
@@ -23,6 +23,9 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "OK" });
+});
 app.post("/login", loginSimple);
 app.get("/getAttendanceDetails", fetchAttendanceDetails);
 app.get("/getProfile", fetchStudentPersonalInfo);
