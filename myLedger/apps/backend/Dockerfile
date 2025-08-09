@@ -11,7 +11,7 @@ RUN npm install -g turbo pnpm
 COPY . .
 RUN turbo prune backend --docker
 
-# 3. Installer: Install deps and build
+# 3. Installer: Install deps, Puppeteer & build
 FROM base AS installer
 WORKDIR /app
 RUN npm install -g pnpm turbo
@@ -20,10 +20,16 @@ RUN npm install -g pnpm turbo
 COPY --from=builder /app/out/json/ .
 
 # Install only production dependencies
-RUN pnpm install --prod --frozen-lockfile 
+RUN pnpm install --prod --frozen-lockfile
+
+# Install Puppeteer explicitly (so we can run its CLI)
+RUN pnpm add puppeteer --workspace-root --prod
 
 # Copy pruned full source
 COPY --from=builder /app/out/full/ .
+
+# Install Chrome for Puppeteer
+RUN npx puppeteer browsers install chrome
 
 # Generate Prisma
 RUN npx prisma generate --schema=packages/db/prisma/schema.prisma
@@ -72,14 +78,13 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
 WORKDIR /app
 
-
-# Copy build output from installer stage
+# Copy build output, node_modules, and Puppeteer cache from installer stage
 COPY --from=installer /app .
+COPY --from=installer /root/.cache/puppeteer /root/.cache/puppeteer
 
-# Install Chromium for Puppeteer
-RUN npx puppeteer browsers install chrome
+# Set Puppeteer executable path
+ENV PUPPETEER_EXECUTABLE_PATH="/root/.cache/puppeteer/chrome/linux-139.0.7258.66/chrome-linux64/chrome"
 
-CMD ["node", "apps/backend/dist/index.js"] 
+CMD ["node", "apps/backend/dist/index.js"]

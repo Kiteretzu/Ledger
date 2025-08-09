@@ -11,7 +11,7 @@ RUN npm install -g turbo pnpm
 COPY . .
 RUN turbo prune worker --docker
 
-# 3. Installer: Install deps and build
+# 3. Installer: Install deps, Puppeteer & build
 FROM base AS installer
 WORKDIR /app
 RUN npm install -g pnpm turbo      
@@ -22,12 +22,17 @@ COPY --from=builder /app/out/json/ .
 # Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile
 
+# Install Puppeteer explicitly (so CLI works)
+RUN pnpm add puppeteer --workspace-root --prod
 
 # Copy full pruned source
 COPY --from=builder /app/out/full/ .
+
+# Install Chrome for Puppeteer
+RUN npx puppeteer browsers install chrome
+
 # Build with turbo
 RUN turbo build
-
 
 # 4. Runner: Run the app
 FROM node:20-slim
@@ -70,15 +75,13 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
 WORKDIR /app
 
-
-
+# Copy build output, node_modules, and Puppeteer cache from installer
 COPY --from=installer /app .
+COPY --from=installer /root/.cache/puppeteer /root/.cache/puppeteer
 
-
-# Install Chromium for Puppeteer
-RUN npx puppeteer browsers install chrome
+# Set Puppeteer executable path
+ENV PUPPETEER_EXECUTABLE_PATH="/root/.cache/puppeteer/chrome/linux-139.0.7258.66/chrome-linux64/chrome"
 
 CMD ["node", "apps/worker/dist/index.js"]
