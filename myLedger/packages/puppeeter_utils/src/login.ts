@@ -34,7 +34,7 @@ export const login = async (username: string, password: string) => {
         timeout: 30000,
       }),
       page.waitForSelector('input[formcontrolname="userid"]', {
-        timeout: 10000,
+        timeout: 30000,
       }),
     ]);
 
