@@ -7,7 +7,9 @@ import { getAllAttendenceCodes } from "./helper/getAllAttendenceCodes";
 import { subjectsOfSemcode } from "./helper/subjectsOfSemcode";
 import { refreshUserToken } from "./helper/refreshUserTokens";
 
-dotenv.config();
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 
 const connection = {
   url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
