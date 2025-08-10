@@ -8,6 +8,7 @@ import { saveUserCredentials } from "../helper/db_helper/saveUserCredentials";
 export const loginSimple = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
+  const timeNow = new Date();
   try {
     const {
       isFailedCaptcha,
@@ -35,6 +36,7 @@ export const loginSimple = async (req: Request, res: Response) => {
       token,
       isLoginSuccessful,
       captchaText,
+      timeTaken: new Date().getTime() - timeNow.getTime(),
     });
   } catch (error) {
     console.error("Login automation failed:", error);
