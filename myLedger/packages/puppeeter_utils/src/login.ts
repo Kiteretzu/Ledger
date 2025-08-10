@@ -18,6 +18,7 @@ export const login = async (username: string, password: string) => {
           const data = await response.json(); // Get payload
           console.log("Response Payload:", data);
           if (data.status.errors.length > 0) {
+            console.log('this was the data that failed ', data.status.errors)
             throw new Error("Login failed: captcha failed ");
             return;
           }

@@ -18,7 +18,7 @@ export const loginSimple = async (req: Request, res: Response) => {
       token,
     } = await login(username, password);
 
-    console.log("this is the isFailedCaptcha", isFailedCaptcha);
+    console.log("this is the isFailedCaptcha", isFailedCaptcha, token);
 
     if (isFailedCaptcha) {
       return res.status(400).json({

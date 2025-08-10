@@ -1,4 +1,4 @@
-# 1. Base image
+# 1. Base image (Debian-based)
 FROM node:20 AS base
 
 # Skip Puppeteer’s Chromium download (we’ll install Chrome manually)
@@ -14,27 +14,30 @@ RUN turbo prune worker --docker
 # 3. Installer: Install deps, Puppeteer & build
 FROM base AS installer
 WORKDIR /app
-RUN npm install -g pnpm turbo      
+RUN npm install -g pnpm turbo
 
-# Copy pruned lockfile + package.json
+# Copy pruned package.json + lockfile
 COPY --from=builder /app/out/json/ .
 
 # Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile
 
-# Install Puppeteer explicitly (so CLI works)
+# Install Puppeteer explicitly (so we can run its CLI)
 RUN pnpm add puppeteer --workspace-root --prod
 
-# Copy full pruned source
+# Copy pruned full source
 COPY --from=builder /app/out/full/ .
 
 # Install Chrome for Puppeteer
 RUN npx puppeteer browsers install chrome
 
-# Build with turbo
+# Generate Prisma client
+RUN npx prisma generate --schema=packages/db/prisma/schema.prisma
+
+# Build with Turbo
 RUN turbo build
 
-# 4. Runner: Run the app
+# 4. Runner: Final image
 FROM node:20-slim
 RUN apt-get update && apt-get install -y \
     wget \
@@ -77,7 +80,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy build output, node_modules, and Puppeteer cache from installer
+# Copy build output, node_modules, and Puppeteer cache from installer stage
 COPY --from=installer /app .
 COPY --from=installer /root/.cache/puppeteer /root/.cache/puppeteer
 
