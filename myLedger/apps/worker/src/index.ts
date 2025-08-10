@@ -13,6 +13,8 @@ const connection = {
   url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
 };
 
+console.log("redis url", process.env.REDIS_URL, process.env.DATABASE_URL);
+
 const worker = new Worker(
   "subject-processing",
   async (job) => {
