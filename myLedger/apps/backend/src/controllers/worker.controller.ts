@@ -261,8 +261,8 @@ export const getAllpossibleAttendCodes = async (
 
   // Step 3: Send to BullMQ
   for (const user of selectedUsers) {
-    console.log("sending attendance", user);
-    await subjectQueue.add("processAttendanceUser", user);
+    console.log("sending attendance", { user });
+    await subjectQueue.add("processAttendanceUser", { user });
   }
 
   console.log("Queued attendance users to BullMQ");

@@ -22,7 +22,7 @@ const worker = new Worker(
   async (job) => {
     console.log("Received job data", job.data);
     console.log(`Processing job ${job.id}...`);
-    const user = job.data.user; // now single user
+    const user = job?.data?.user; // now single user
 
     console.log(
       `Processing user: ${user.token} with semCode: ${user.semesterLabel}`
