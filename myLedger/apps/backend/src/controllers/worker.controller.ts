@@ -284,6 +284,14 @@ export const refreshAllTokens = async (req, res) => {
         password: user.password,
       },
     });
+
+    console.log({
+      user: {
+        type: "refreshToken",
+        username: user.username,
+        password: user.password,
+      },
+    });
   }
 
   res.json({ message: `Queued ${getAllUsers.length} refresh token jobs` });

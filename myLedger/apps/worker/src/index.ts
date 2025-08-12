@@ -31,7 +31,7 @@ const worker = new Worker(
     try {
       if (user.type === "attendanceCode") {
         // If type is attendanceCode, process all semesters
-        getAllAttendenceCodes(user.token, user.semesters);
+        await getAllAttendenceCodes(user.token, user.semesters);
       } else if (user.type === "refreshToken") {
         console.log("reached here", user.password);
 
