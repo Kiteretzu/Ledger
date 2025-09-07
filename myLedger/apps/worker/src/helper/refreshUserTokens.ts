@@ -12,6 +12,7 @@ export const refreshUserToken = async (username: string, password: string) => {
       token,
     } = await login(username, password);
 
+    console.log('Updaing token...',)
     const updatedToken = await prisma.user.update({
       where: { username },
       data: {

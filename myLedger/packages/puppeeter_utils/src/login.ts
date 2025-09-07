@@ -17,10 +17,12 @@ export const login = async (username: string, password: string) => {
         try {
           const data = await response.json(); // Get payload
           console.log("Response Payload:", data);
-          if (data.status.errors.length > 0) {
+          if (data.status.errors[0] == "Invalid captcha submitted..") {
             console.log("this was the data that failed ", data.status.errors);
             throw new Error("Login failed: captcha failed ");
             return;
+          } else if (data.status.errors[0] == "Invalid Login Credential!") {
+            throw new Error("Login failed: Invalid credentials ");
           }
         } catch (error) {
           console.error("Error extracting response data:", error);

@@ -1,14 +1,30 @@
 import { login } from "@repo/puppeteer_utils/login";
 import redis from "@repo/redis/main";
 import axios from "axios";
+import { client as prisma } from "@repo/db/client";
 import { Request, Response } from "express";
 import { saveSubjectSemester } from "../helper/db_helper/saveSubjectSemester";
 import { saveUserCredentials } from "../helper/db_helper/saveUserCredentials";
 
 export const loginSimple = async (req: Request, res: Response) => {
   const { username, password } = req.body;
-
   const timeNow = new Date();
+
+  const userExist = await prisma.user.findUnique({
+    where: {
+      username,
+    },
+  });
+
+  if (userExist?.token && userExist?.tokenExpiry > new Date()) {
+    // Token is valid, proceed with login
+    return res.status(200).json({
+      message: "Successfully retrived Token",
+      token: userExist.token,
+      timeTaken: new Date().getTime() - timeNow.getTime(),
+    });
+  }
+
   try {
     const {
       isFailedCaptcha,
