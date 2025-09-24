@@ -29,6 +29,11 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
 });
 
+app.get('/get-healther',(req, res) => {
+    res.status(200).json({ status: "OK" });
+
+})
+
 app.get("/get-redis", async (req, res) => {
   const allPayloads = await redis.hgetall("Subject");
   const attendancePayloads = await redis.hgetall("attendance");
